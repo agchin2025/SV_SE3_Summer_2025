@@ -1,0 +1,5 @@
+images/
+backgrounds/
+**/.DS_Store
+__pycache__/
+.cursor/
