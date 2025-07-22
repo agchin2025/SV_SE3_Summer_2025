@@ -75,7 +75,7 @@ def convert_svgs_to_pngs_inkscape(input_folder, output_folder, student=True):
 
 
 
-file_path = "/Users/jishankharbanda/Desktop/VERSA/versa_summer/data/SV_Students_SE3_2025_Python_Data.xlsx"
+file_path = "/Users/jishankharbanda/Desktop/VERSA/versa_summer/data/SV_Students_SE3_2025_Python_Data_7_13.xlsx"
 df = pd.read_excel(file_path)
 
 def download_svg(url, output_path):
@@ -514,6 +514,8 @@ def run_analysis(image_folder, excel_file, start_index, sID, load_in=False, if_e
 
     # 1) Read raw student sheet and build `data` + default `analysis_list`
     df = pd.read_excel(excel_file, sheet_name=str(sID))
+    # Compute total time per assignment_code
+    assignment_total_time = df.groupby('assignment_code')['sketch_time'].sum().to_dict()
     data = []
     analysis_list = []
     for i, row in df.iterrows():
@@ -521,6 +523,8 @@ def run_analysis(image_folder, excel_file, start_index, sID, load_in=False, if_e
         pid = row['assignment_code']
         sid = row['enrollment_id']
         attempt = row['attempt']
+        sketch_time = row.get('sketch_time', None)
+        total_time = assignment_total_time.get(pid, None)
 
         # display data
         data.append({
@@ -535,6 +539,8 @@ def run_analysis(image_folder, excel_file, start_index, sID, load_in=False, if_e
             'additional_per':     add,
             'hint_bool':          row['did_look_at_hint'],
             'peak_bool':          row['did_peek'],
+            'sketch_time':        sketch_time,
+            'total_time':         total_time,
             'sketch_path':        os.path.join(image_folder, f'{sid}_png', pid, f'{attempt}.png'),
             'problem_path':       os.path.join(image_folder, 'problems_png', f'{pid}_problem.png'),
             'solution_path':      os.path.join(image_folder, 'solns_png', f'{pid}.png'),
@@ -964,6 +970,21 @@ def run_analysis(image_folder, excel_file, start_index, sID, load_in=False, if_e
             correct = f'Correct percent: {(attempt_item["correct_per"] * 100):.0f}'
             missing = f'Missing percent: {(attempt_item["missing_per"] * 100):.0f}'
             additional = f'Additional percent: {(attempt_item["additional_per"] * 100):.0f}'
+            sketch_time = attempt_item.get('sketch_time', None)
+            total_time = attempt_item.get('total_time', None)
+            # Format time as min:sec
+            def format_time(val):
+                if val is None or pd.isna(val) or val == 0:
+                    return 'N/A'
+                try:
+                    val = float(val)
+                    mins = int(val // 60)
+                    secs = int(val % 60)
+                    return f"{mins}m {secs}s" if mins > 0 else f"{secs}s"
+                except Exception:
+                    return 'N/A'
+            sketch_time_str = f"Time for this submission: {format_time(sketch_time)}"
+            total_time_str = f"Total time for assignment: {format_time(total_time)}"
             last_message = f'Preious displayed message: {last_item["results"]}'
             last_correct = f'Preious correct percent: {(last_item["correct_per"] * 100):.0f}'
             last_missing = f'Preious missing percent: {(last_item["missing_per"] * 100):.0f}'
@@ -997,6 +1018,17 @@ def run_analysis(image_folder, excel_file, start_index, sID, load_in=False, if_e
             self.correct_label.config(text=correct)
             self.missing_label.config(text=missing)
             self.additional_label.config(text=additional)
+            # NEW: show time info
+            if hasattr(self, 'sketch_time_label'):
+                self.sketch_time_label.config(text=sketch_time_str)
+            else:
+                self.sketch_time_label = ttk.Label(self.data_frame, text=sketch_time_str)
+                self.sketch_time_label.pack(pady=5)
+            if hasattr(self, 'total_time_label'):
+                self.total_time_label.config(text=total_time_str)
+            else:
+                self.total_time_label = ttk.Label(self.data_frame, text=total_time_str)
+                self.total_time_label.pack(pady=5)
 
             # If relivant loads in the previous attempt data
             if attempt_item["attempt"] != 0:
@@ -1293,7 +1325,7 @@ def download_backgrounds(sheet_path, output_path, columns=('grid_image_file_url'
 # 0. Download background images first
 background_folder = "/Users/jishankharbanda/Desktop/VERSA/versa_summer/data/backgrounds"
 download_backgrounds(
-    sheet_path="/Users/jishankharbanda/Desktop/VERSA/versa_summer/data/SV_Students_SE3_2025_Python_Data.xlsx",
+    sheet_path="/Users/jishankharbanda/Desktop/VERSA/versa_summer/data/SV_Students_SE3_2025_Python_Data_7_13.xlsx",
     output_path=background_folder,
     columns=('grid_image_file_url', 'assignment_code'),
     sheet_index='assignments'
@@ -1301,17 +1333,17 @@ download_backgrounds(
 
 # 1. Prepare data and images
 prepare_analysis(
-    excel_file="/Users/jishankharbanda/Desktop/VERSA/versa_summer/data/SV_Students_SE3_2025_Python_Data.xlsx",
+    excel_file="/Users/jishankharbanda/Desktop/VERSA/versa_summer/data/SV_Students_SE3_2025_Python_Data_7_13.xlsx",
     image_folder="/Users/jishankharbanda/Desktop/VERSA/versa_summer/data/images",
-    sID='36233',
+    sID='36445',
     background_folder=background_folder  # Use the populated folder
 )
 
 # 2. Run the analysis GUI
 run_analysis(
     image_folder="/Users/jishankharbanda/Desktop/VERSA/versa_summer/data/images",
-    excel_file="/Users/jishankharbanda/Desktop/VERSA/versa_summer/data/SV_Students_SE3_2025_Python_Data.xlsx",
+    excel_file="/Users/jishankharbanda/Desktop/VERSA/versa_summer/data/SV_Students_SE3_2025_Python_Data_7_13.xlsx",
     start_index=0,
-    sID='36233',
+    sID='36445',
     load_in=True
 )
